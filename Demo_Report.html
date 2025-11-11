@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>[演示] 智能生产绩效报告</title>
+    <!-- 引入Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入Chart.js 用于图表 -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- 引入 Inter 字体 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', 'Noto Sans SC', sans-serif;
+            background-color: #f1f5f9; /* 使用更柔和的 Slate-100 背景色 */
+        }
+        .card {
+            background-color: #ffffff;
+            border-radius: 0.75rem; /* 12px / rounded-xl */
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.07), 0 4px 6px -4px rgb(0 0 0 / 0.07);
+            transition: all 0.3s ease-in-out;
+        }
+        .card:hover {
+            box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+        }
+        
+        /* 打印样式：隐藏按钮并优化布局 */
+        @media print {
+            .no-print {
+                display: none;
+            }
+            body {
+                background-color: #ffffff;
+                font-family: 'Inter', 'Noto Sans SC', sans-serif;
+            }
+            .print-container {
+                box-shadow: none;
+                margin: 0;
+                padding: 0;
+                max-width: 100%;
+            }
+            .card {
+                box-shadow: none;
+                border: 1px solid #e5e7eb;
+                page-break-inside: avoid;
+                border-radius: 0.75rem;
+            }
+            .print-chart-container {
+                height: 20rem; /* 打印时固定图表高度 */
+            }
+        }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <div class="container mx-auto p-4 sm:p-8 max-w-7xl print-container">
+        
+        <!-- 报告头部 -->
+        <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
+            <div>
+                <h1 class="text-3xl font-bold text-emerald-700">🐷 智能生产绩效仪表盘 (全场累计数据)</h1>
+                <!-- 修改：客户名称替换 -->
+                <p class="text-lg text-gray-700">[演示] 标杆农牧科技有限公司</p>
+                <p class="text-sm text-gray-500 mt-1">报告日期：2025年11月10日</p>
+            </div>
+            <button onclick="window.print()" class="mt-4 sm:mt-0 no-print bg-emerald-600 text-white px-5 py-2 rounded-lg shadow-md hover:bg-emerald-700 transition duration-300 flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m10 0h-8a1 1 0 00-1 1v3a1 1 0 001 1h8a1 1 0 001-1v-3a1 1 0 00-1-1z" />
+                </svg>
+                打印/导出PDF
+            </button>
+        </header>
+
+        <!-- 仅用于打印的头部 -->
+        <div class="hidden print:block mb-6 text-center">
+             <!-- 修改：客户名称替换 -->
+            <h1 class="text-3xl font-bold text-gray-900">[演示] 标杆农牧科技有限公司生产绩效报告</h1>
+            <p class="text-sm text-gray-600 mt-1">报告日期：2025年11月10日</p>
+        </div>
+        
+        <!-- 新增：数据隐私声明 -->
+        <section class="card p-5 mb-8 bg-yellow-50 border border-yellow-300">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                </div>
+                <div class="ml-4">
+                    <h2 class="text-md font-semibold text-yellow-800">隐私保护与数据声明</h2>
+                    <p class="text-sm text-yellow-700">
+                        本报告数据为基于真实生产逻辑生成的**虚拟演示数据**，所有客户名称均已隐藏，旨在安全展示AI报告功能，不代表任何特定猪场的真实表现。
+                    </p>
+                </div>
+            </div>
+        </section>
+        
+        <!-- 数据说明与分析基础 -->
+        <section class="card p-6 mb-8 bg-blue-50 border border-blue-200">
+            <h2 class="text-xl font-semibold text-blue-800 border-b border-blue-200 pb-3 mb-4">数据说明与分析基础</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
+                <!-- 时间范围 -->
+                <div class="bg-white p-4 rounded-lg shadow-sm border border-blue-100">
+                    <p class="font-medium text-gray-500 uppercase tracking-wider">数据时间范围</p>
+                    <p class="font-semibold text-gray-700 text-base">2023年末 至 2025年11月</p>
+                    <p class="text-xs text-gray-500 mt-1">涵盖了此期间内的所有生产记录</p>
+                </div>
+                <!-- 分析样本 -->
+                <div class="bg-white p-4 rounded-lg shadow-sm border border-blue-100">
+                    <p class="font-medium text-gray-500 uppercase tracking-wider">分析样本</p>
+                    <p class="font-semibold text-gray-700 text-base">91个 完整断奶周期</p>
+                    <p class="text-xs text-gray-500 mt-1">来源于第 1、2、3 胎次的母猪</p>
+                </div>
+                <!-- 数据内容 -->
+                <div class="bg-white p-4 rounded-lg shadow-sm border border-blue-100">
+                    <p class="font-medium text-gray-500 uppercase tracking-wider">核心分析数据</p>
+                    <p class="font-semibold text-gray-700 text-base">母猪繁殖与产房性能</p>
+                    <p class="text-xs text-gray-500 mt-1">活仔数、断奶数、死亡率、断奶体重</p>
+                </div>
+            </div>
+            <p class="mt-6 text-xs text-gray-600 bg-blue-100 p-3 rounded-md">
+                **重要提示：** 此报告分析的是猪群自2023年末以来**按胎次**累积的**长期结构性表现**。它旨在发现根本性的管理问题（如高胎次性能下降）。
+                <br>如需评估**短期运营表现**，建议使用月度数据（若有）进行环比分析。
+            </p>
+        </section>
+
+        <!-- 核心数据概览 -->
+        <section class="mb-8">
+            <h2 class="text-xl font-semibold text-gray-900 mb-4">关键指标概览 (胎次 1-3 平均)</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                <!-- 卡片1: 平均窝活仔数 -->
+                <div class="card p-6 flex items-start">
+                    <div class="flex-shrink-0 bg-emerald-100 text-emerald-600 rounded-lg p-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <div class="ml-5">
+                        <p class="text-sm font-medium text-gray-500 uppercase tracking-wider">平均窝活仔数</p>
+                        <p class="text-4xl font-bold text-emerald-600">15.27 <span class="text-lg font-medium text-gray-600">头</span></p>
+                        <p class="text-sm text-gray-500 mt-1">高产潜力突出</p>
+                    </div>
+                </div>
+                <!-- 卡片2: 平均断奶数 -->
+                <div class="card p-6 flex items-start">
+                    <div class="flex-shrink-0 bg-blue-100 text-blue-600 rounded-lg p-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-2.121M17 20v-2m-8-3a4 4 0 100-8 4 4 0 000 8zm0 0c1.657 0 3-1.79 3-4s-1.343-4-3-4S6 3.79 6 6s1.343 4 3 4zm6 5H3a1 1 0 00-1 1v3a1 1 0 001 1h12a1 1 0 001-1v-3a1 1 0 00-1-1z" />
+                        </svg>
+                    </div>
+                    <div class="ml-5">
+                        <p class="text-sm font-medium text-gray-500 uppercase tracking-wider">平均断奶数</p>
+                        <p class="text-4xl font-bold text-blue-600">13.14 <span class="text-lg font-medium text-gray-600">头</span></p>
+                        <p class="text-sm text-gray-500 mt-1">产房仍有损失</p>
+                    </div>
+                </div>
+                <!-- 卡片3: 窝死亡率 -->
+                <div class="card p-6 flex items-start">
+                    <div class="flex-shrink-0 bg-red-100 text-red-600 rounded-lg p-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                        </svg>
+                    </div>
+                    <div class="ml-5">
+                        <p class="text-sm font-medium text-gray-500 uppercase tracking-wider">窝死亡率</p>
+                        <p class="text-4xl font-bold text-red-600">13.93 <span class="text-lg font-medium text-gray-600">%</span></p>
+                        <p class="text-sm text-gray-500 mt-1">核心改进点</p>
+                    </div>
+                </div>
+                <!-- 卡片4: 断奶均重 -->
+                <div class="card p-6 flex items-start">
+                    <div class="flex-shrink-0 bg-yellow-100 text-yellow-600 rounded-lg p-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2" />
+                        </svg>
+                    </div>
+                    <div class="ml-5">
+                        <p class="text-sm font-medium text-gray-500 uppercase tracking-wider">仔猪断奶均重</p>
+                        <p class="text-4xl font-bold text-yellow-700">7.08 <span class="text-lg font-medium text-gray-600">kg</span></p>
+                        <p class="text-sm text-gray-500 mt-1">有提升空间</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 核心KPI总览 -->
+        <section class="card p-6 mb-6">
+            <h2 class="text-xl font-semibold text-gray-900 border-b pb-3 mb-4">一、 详细绩效分解 (按胎次)</h2>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">核心指标 (KPI)</th>
+                            <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">胎次 1</th>
+                            <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">胎次 2</th>
+                            <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">胎次 3</th>
+                            <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">总体平均 (胎次 1-3)</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-800">完成周期数 (样本量)</td>
+                            <td class="px-6 py-4 text-center text-sm font-bold text-gray-700">40</td>
+                            <td class="px-6 py-4 text-center text-sm font-bold text-gray-700">28</td>
+                            <td class="px-6 py-4 text-center text-sm font-bold text-gray-700">23</td>
+                            <td class="px-6 py-4 text-center text-sm font-bold text-blue-700">91</td>
+                        </tr>
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-800">平均窝活仔数 (NbNv)</td>
+                            <td class="px-6 py-4 text-center text-sm">14.15</td>
+                            <td class="px-6 py-4 text-center text-sm font-bold text-emerald-700">15.71</td>
+                            <td class="px-6 py-4 text-center text-sm font-bold text-emerald-700">15.96</td>
+                            <td class="px-6 py-4 text-center text-sm font-bold text-emerald-700">15.27</td>
+                        </tr>
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-800">平均断奶仔猪数 (NbSev)</td>
+                            <td class="px-6 py-4 text-center text-sm">12.95</td>
+                            <td class="px-6 py-4 text-center text-sm font-bold text-emerald-700">13.57</td>
+                            <td class="px-6 py-4 text-center text-sm">12.74</td>
+                            <td class="px-6 py-4 text-center text-sm font-bold">13.14</td>
+                        </tr>
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-800">窝死亡率 (%)</td>
+                            <td class="px-6 py-4 text-center text-sm font-bold text-yellow-600">8.5%</td>
+                            <td class="px-6 py-4 text-center text-sm font-bold text-red-600">13.75%</td>
+                            <td class="px-6 py-4 text-center text-sm font-bold text-red-700">20.17%</td>
+                            <td class="px-6 py-4 text-center text-sm font-bold text-red-600">13.93%</td>
+                        </tr>
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-800">平均断奶日龄 (AgeSev)</td>
+                            <td class="px-6 py-4 text-center text-sm">24.1 天</td>
+                            <td class="px-6 py-4 text-center text-sm">27.2 天</td>
+                            <td class="px-6 py-4 text-center text-sm font-bold text-red-600">30.5 天</td>
+                            <td class="px-6 py-4 text-center text-sm">27.0 天</td>
+                        </tr>
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-800">平均窝断奶总重 (PdsSev)</td>
+                            <td class="px-6 py-4 text-center text-sm font-bold">94.6 kg</td>
+                            <td class="px-6 py-4 text-center text-sm">94.4 kg</td>
+                            <td class="px-6 py-4 text-center text-sm font-bold text-red-600">87.0 kg</td>
+                            <td class="px-6 py-4 text-center text-sm">92.6 kg</td>
+                        </tr>
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-800">平均仔猪断奶均重</td>
+                            <td class="px-6 py-4 text-center text-sm font-bold text-emerald-700">7.30 kg</td>
+                            <td class="px-6 py-4 text-center text-sm">6.96 kg</td>
+                            <td class="px-6 py-4 text-center text-sm font-bold text-red-700">6.84 kg</td>
+                            <td class="px-6 py-4 text-center text-sm font-bold">7.08 kg</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- 近期趋势 -->
+        <section class="card p-6 mb-6">
+            <h2 class="text-xl font-semibold text-gray-900 border-b pb-3 mb-4">二、 近期生产趋势 (基于累计数据推算)</h2>
+             <p class="text-sm text-gray-600 mb-4">
+                注意：由于数据为全场累计，月度对比仅为根据最近事件日期的估算，最准确的分析请参见下方的“按胎次对比”。
+            </p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- 断奶趋势 -->
+                <div>
+                    <h3 class="text-md font-semibold text-gray-700 mb-2">断奶趋势 (估算 9月 vs 8月)</h3>
+                    <table class="min-w-full divide-y divide-gray-200 border rounded-lg overflow-hidden">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">维度</th>
+                                <th class="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase">8月 (估算)</th>
+                                <th class="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase">9月 (估算)</th>
+                                <th class="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase">趋势</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            <tr>
+                                <td class="px-4 py-2 text-sm">断奶窝数</td>
+                                <td class="px-4 py-2 text-center text-sm">9</td>
+                                <td class="px-4 py-2 text-center text-sm">11</td>
+                                <td class="px-4 py-2 text-center text-lg font-bold text-emerald-600">↗</td>
+                            </tr>
+                            <tr>
+                                <td class="px-4 py-2 text-sm">平均断奶数/窝</td>
+                                <td class="px-4 py-2 text-center text-sm">10.78</td>
+                                <td class="px-4 py-2 text-center text-sm">10.91</td>
+                                <td class="px-4 py-2 text-center text-lg font-bold text-gray-500">→</td>
+                            </tr>
+                            <tr>
+                                <td class="px-4 py-2 text-sm">平均仔猪均重</td>
+                                <td class="px-4 py-2 text-center text-sm">6.95 kg</td>
+                                <td class="px-4 py-2 text-center text-sm">7.38 kg</td>
+                                <td class="px-4 py-2 text-center text-lg font-bold text-emerald-600">↗</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <!-- 产仔趋势 -->
+                <div>
+                    <h3 class="text-md font-semibold text-gray-700 mb-2">产仔趋势 (估算 10月 vs 9月)</h3>
+                    <table class="min-w-full divide-y divide-gray-200 border rounded-lg overflow-hidden">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">维度</th>
+                                <th class="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase">9月 (估算)</th>
+                                <th class="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase">10月 (估算)</th>
+                                <th class="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase">趋势</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            <tr>
+                                <td class="px-4 py-2 text-sm">产仔窝数</td>
+                                <td class="px-4 py-2 text-center text-sm">7</td>
+                                <td class="px-4 py-2 text-center text-sm">15</td>
+                                <td class="px-4 py-2 text-center text-lg font-bold text-emerald-600">↗</td>
+                            </tr>
+                            <tr>
+                                <td class="px-4 py-2 text-sm">平均窝活仔数</td>
+                                <td class="px-4 py-2 text-center text-sm">14.43</td>
+                                <td class="px-4 py-2 text-center text-sm font-bold text-red-600">12.53</td>
+                                <td class="px-4 py-2 text-center text-lg font-bold text-red-600">↘</td>
+                            </tr>
+                             <tr>
+                                <td class="px-4 py-2 text-sm">&nbsp;</td>
+                                <td class="px-4 py-2 text-center text-sm">&nbsp;</td>
+                                <td class="px-4 py-2 text-center text-sm">&nbsp;</td>
+                                <td class="px-4 py-2 text-center text-lg">&nbsp;</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <p class="text-sm text-gray-600 mt-4">
+                **趋势小结：** 9月的断奶成绩（仔猪均重）有所改善。但10月新产仔的窝活仔数（12.53头）相比9月（14.43头）有明显下降，需关注（6-7月）的配种情况。
+            </p>
+        </section>
+
+        <!-- KPI 可视化图表 -->
+        <section class="mb-6 card">
+            <h2 class="text-xl font-semibold text-gray-900 border-b pb-3 mb-4 p-6">三、 核心问题可视化 (按胎次对比)</h2>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 p-6 pt-0">
+                <!-- 图表1: 产仔性能 -->
+                <div class="bg-gray-50 p-4 rounded-lg border print-chart-container h-80">
+                    <h3 class="text-md font-semibold text-gray-800 mb-2 text-center">产仔性能 (窝活仔数)</h3>
+                    <canvas id="litterSizeChart"></canvas>
+                </div>
+                <!-- 图表2: 窝死亡率 -->
+                <div class="bg-gray-50 p-4 rounded-lg border print-chart-container h-80">
+                    <h3 class="text-md font-semibold text-gray-800 mb-2 text-center">窝死亡率 (%)</h3>
+                    <canvas id="mortalityChart"></canvas>
+                </div>
+                <!-- 图表3: 断奶均重 -->
+                <div class="bg-gray-50 p-4 rounded-lg border print-chart-container h-80">
+                    <h3 class="text-md font-semibold text-gray-800 mb-2 text-center">仔猪断奶均重 (kg)</h3>
+                    <canvas id="weanWeightChart"></canvas>
+                </div>
+                <!-- 潜力改进区间 -->
+                <div class="bg-gray-50 p-4 rounded-lg border print-chart-container flex flex-col justify-center items-center h-80">
+                    <h3 class="text-md font-semibold text-gray-800 mb-2 text-center">潜力改进区间 (仔猪均重)</h3>
+                    <div class="text-center p-6">
+                        <div class="text-6xl font-bold text-red-600">52.7%</div>
+                        <p class="text-lg font-medium text-gray-800 mt-2">的窝平均断奶均重**低于 7.0 kg**</p>
+                        <p class="text-sm text-gray-600 mt-2">(基于91个有效断奶窝数据)</p>
+                        <div class="w-full bg-gray-200 rounded-full h-4 mt-4 overflow-hidden">
+                            <div class="bg-red-600 h-4 rounded-full" style="width: 52.7%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 总结与建议 -->
+        <section class="card p-6">
+            <h2 class="text-xl font-semibold text-gray-900 border-b pb-3 mb-4">四、 总结与下阶段建议</h2>
+            <!-- 核心结论 - 为JS脚本添加ID -->
+            <div id="coreConclusions" class="mb-6 p-4 bg-emerald-50 border-l-4 border-emerald-400 rounded-r-lg">
+                <h3 class="text-lg font-semibold text-emerald-800 mb-2">核心结论 (按胎次结构分析)</h3>
+                <p class="text-sm text-gray-700 leading-relaxed">
+                    贵司母猪群具备**极高的产仔潜力**（胎次 2-3 活仔数近 16 头）。但这一潜力被两大**结构性问题**严重限制：
+                    <br>1. **高胎次产房死亡率高：** 胎次 3 的窝死亡率高达 **20.17%**，导致平均断奶数（12.74头）甚至低于胎次 1（12.95头），高产仔优势被完全浪费。
+                    <br>2. **高胎次泌乳性能低下：** 胎次 3 的母猪**饲喂时间最长**（30.5天），但产出的**仔猪均重却是最低的**（6.84 kg）。这表明母猪在泌乳后期已无法满足仔猪生长需求，是严重的生产低效。
+                </p>
+            </div>
+
+            <!-- 标题和新增的AI按钮 -->
+            <div class="flex items-center justify-between mb-3">
+                <h3 class="text-lg font-semibold text-gray-800">下阶段管理建议 (Next Steps)</h3>
+                <button id="generateMemoBtn" class="no-print bg-emerald-500 text-white px-4 py-2 rounded-lg shadow-sm hover:bg-emerald-600 transition duration-300 text-sm flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1.5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.707-10.293a1 1 0 00-1.414-1.414l-3 3a1 1 0 000 1.414l3 3a1 1 0 001.414-1.414L9.414 11H13a1 1 0 100-2H9.414l1.293-1.293z" clip-rule="evenodd" />
+                    </svg>
+                    ✨ 智能生成团队周报
+                </button>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200 border">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase w-[15%]">优先级</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase w-[20%]">领域</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase w-[35%]">建议措施</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase w-[30%]">目的</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-4 py-3">
+                                <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                                    最紧急
+                                </span>
+                            </td>
+                            <td class="px-4 py-3 text-sm font-bold text-gray-700">数据管理</td>
+                            <td class="px-4 py-3 text-sm text-gray-700">审查近期窝重记录中的极端异常值（如 7kg 窝重），并对所有员工进行 `PdsSev` (窝总重) 录入标准的再培训。</td>
+                            <td class="px-4 py-3 text-sm text-gray-700">确保数据准确性，这是所有生产决策的基础。</td>
+                        </tr>
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-4 py-3">
+                                <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                    高优先级
+                                </span>
+                            </td>
+                            <td class="px-4 py-3 text-sm font-bold text-gray-700">产房管理</td>
+                            <td class="px-4 py-3 text-sm text-gray-700">针对高产仔（活仔数 $\ge$ 15）的**高胎次母猪**，必须执行**寄养**或**分批哺乳**。增加产房巡栏频率，防压死。</td>
+                            <td class="px-4 py-3 text-sm text-gray-700">攻坚高胎次死亡率 (目标 <10%)。</td>
+                        </tr>
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-4 py-3">
+                                <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                    高优先级
+                                </span>
+                            </td>
+                            <td class="px-4 py-3 text-sm font-bold text-gray-700">营养策略</td>
+                            <td class="px-4 py-3 text-sm text-gray-700">
+                                **重新评估胎次 3+ 母猪的泌乳期饲料配方**，可能需提高能量和氨基酸浓度。检查高胎次母猪的采食量和饮水流量。
+                                <!-- 新增的AI按钮 -->
+                                <button id="generateNutritionBtn" class="no-print mt-2 bg-blue-500 text-white px-3 py-1.5 rounded-md shadow-sm hover:bg-blue-600 transition duration-300 text-xs flex items-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1.5" viewBox="0 0 20 20" fill="currentColor">
+                                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                    </svg>
+                                    ✨ AI分析营养方案
+                                </button>
+                            </td>
+                            <td class="px-4 py-3 text-sm text-gray-700">提升高胎次泌乳性能，提高仔猪均重 (目标 >7.0kg)。</td>
+                        </tr>
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-4 py-3">
+                                <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                                    持续优化
+                                </span>
+                            </td>
+                            <td class="px-4 py-3 text-sm font-bold text-gray-700">猪群优化</td>
+                            <td class="px-4 py-3 text-sm text-gray-700">建立清晰的**低效母猪淘汰标准**（例如：连续胎次产仔性能低下、木乃伊/死胎率过高），并坚决执行。</td>
+                            <td class="px-4 py-3 text-sm text-gray-700">优化群体结构，淘汰生产力低下的母猪。</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- AI Modal (新增) -->
+    <div id="aiModal" class="no-print fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 hidden p-4">
+        <div class="card w-full max-w-2xl max-h-[90vh] flex flex-col">
+            <div class="flex justify-between items-center p-5 border-b border-gray-200">
+                <h3 id="modalTitle" class="text-xl font-semibold text-emerald-700">AI 智能分析结果</h3>
+                <button id="closeModalBtn" class="text-gray-400 hover:text-gray-600 transition">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <div id="modalContent" class="p-6 overflow-y-auto text-gray-700 leading-relaxed space-y-4">
+                <!-- AI生成的内容将注入这里 -->
+            </div>
+            <div class="p-4 bg-gray-50 border-t text-right rounded-b-xl">
+                 <button id="copyModalBtn" class="bg-blue-500 text-white px-4 py-2 rounded-lg shadow-sm hover:bg-blue-600 transition duration-300 text-sm">
+                    复制内容
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Spinner (新增) -->
+    <div id="loadingSpinner" class="no-print fixed inset-0 bg-white bg-opacity-90 flex flex-col items-center justify-center z-[100] hidden">
+        <svg class="animate-spin h-12 w-12 text-emerald-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        <p class="text-lg font-medium text-emerald-700 mt-4">AI 正在分析您的数据，请稍候...</p>
+    </div>
+
+    <!-- 脚本移动到 body 末尾 -->
+    <script>
+        // 图表渲染脚本
+        (function() {
+            // 确保 DOM 元素存在后再执行
+            const ctx1 = document.getElementById('litterSizeChart');
+            const ctx2 = document.getElementById('mortalityChart');
+            const ctx3 = document.getElementById('weanWeightChart');
+
+            if (!ctx1 || !ctx2 || !ctx3) {
+                // 如果画布不存在，则不执行图表渲染
+                return;
+            }
+
+            const labels = ['胎次 1', '胎次 2', '胎次 3', '胎次 4'];
+            const kpiData = {
+                litterSize: [14.15, 15.71, 15.96, 10.25],
+                mortality: [8.5, 13.75, 20.17, 0.0],
+                // 胎次4均重计算：(68/10 + 74/11 + 80/12 + 55/8) / 4 = (6.8 + 6.73 + 6.67 + 6.87) / 4 = 6.77
+                weanWeight: [7.30, 6.96, 6.84, 6.77] 
+            };
+            
+            const chartOptions = {
+                responsive: true,
+                maintainAspectRatio: false, // 允许图表在容器内调整大小
+                plugins: {
+                    legend: { display: false }
+                }
+            };
+
+            // 1. 产仔性能 (窝活仔数) - 柱状图
+            new Chart(ctx1, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: '平均窝活仔数 (NbNv)',
+                        data: kpiData.litterSize,
+                        backgroundColor: [
+                            'rgba(54, 162, 235, 0.6)',
+                            'rgba(16, 185, 129, 0.6)', // emerald
+                            'rgba(16, 185, 129, 0.8)', // emerald
+                            'rgba(255, 159, 64, 0.6)'
+                        ],
+                        borderColor: [
+                            'rgba(54, 162, 235, 1)',
+                            'rgba(16, 185, 129, 1)',
+                            'rgba(16, 185, 129, 1)',
+                            'rgba(255, 159, 64, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    ...chartOptions,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: { display: true, text: '头 (Head)' }
+                        }
+                    }
+                }
+            });
+
+            // 2. 窝死亡率 (%) - 折线图
+            new Chart(ctx2, {
+                type: 'line',
+                data: {
+                    labels: labels.slice(0, 3), // 胎次4数据量少，不显示死亡率
+                    datasets: [{
+                        label: '窝死亡率 (%)',
+                        data: kpiData.mortality.slice(0, 3),
+                        fill: false,
+                        borderColor: 'rgba(239, 68, 68, 1)',
+                        backgroundColor: 'rgba(239, 68, 68, 0.8)',
+                        tension: 0.1,
+                        pointRadius: 5,
+                        pointHoverRadius: 7
+                    }]
+                },
+                options: {
+                    ...chartOptions,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: { display: true, text: '百分比 (%)' }
+                        }
+                    }
+                }
+            });
+
+            // 3. 仔猪断奶均重 (kg) - 柱状图
+            new Chart(ctx3, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: '平均仔猪断奶均重 (kg)',
+                        data: kpiData.weanWeight,
+                        backgroundColor: [
+                            'rgba(16, 185, 129, 0.6)', // emerald
+                            'rgba(245, 158, 11, 0.6)', // amber
+                            'rgba(239, 68, 68, 0.6)', // 胎次3 红色
+                            'rgba(239, 68, 68, 0.4)'  // 胎次4 浅红
+                        ],
+                        borderColor: [
+                            'rgba(16, 185, 129, 1)',
+                            'rgba(245, 158, 11, 1)',
+                            'rgba(239, 68, 68, 1)',
+                            'rgba(239, 68, 68, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    ...chartOptions,
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            min: 6, // 从6kg开始，更明显
+                            title: { display: true, text: '公斤 (kg)' }
+                        }
+                    }
+                }
+            });
+        })(); // 使用 IIFE 立即执行
+    </script>
+
+    <!-- 新增: Gemini API 调用脚本 -->
+    <script>
+        (function() {
+            // API 配置 (请注意：在生产环境中，API密钥不应暴露在客户端)
+            const apiKey = ""; // 留空，将由 Canvas 运行时提供
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+
+            // 获取 Modal 和 Loading 的 DOM 元素
+            const modal = document.getElementById('aiModal');
+            const modalTitle = document.getElementById('modalTitle');
+            const modalContent = document.getElementById('modalContent');
+            const closeModalBtn = document.getElementById('closeModalBtn');
+            const copyModalBtn = document.getElementById('copyModalBtn');
+            const loadingSpinner = document.getElementById('loadingSpinner');
+
+            // 获取按钮
+            const generateMemoBtn = document.getElementById('generateMemoBtn');
+            const generateNutritionBtn = document.getElementById('generateNutritionBtn');
+            
+            // 确保按钮存在
+            if (!generateMemoBtn || !generateNutritionBtn || !modal || !closeModalBtn || !copyModalBtn || !loadingSpinner) {
+                console.warn("报告的 AI 交互元素未能完全加载。");
+                return;
+            }
+
+            // --- 帮助函数 ---
+
+            /**
+             * 显示/隐藏 Loading 动画
+             * @param {boolean} isLoading 是否显示
+             */
+            function showLoading(isLoading) {
+                if (isLoading) {
+                    loadingSpinner.classList.remove('hidden');
+                } else {
+                    loadingSpinner.classList.add('hidden');
+                }
+            }
+
+            /**
+             * 显示 Modal
+             * @param {string} title 标题
+             * @param {string} content HTML 内容
+             */
+            function showModal(title, content) {
+                modalTitle.textContent = title;
+                modalContent.innerHTML = content;
+                modal.classList.remove('hidden');
+            }
+
+            /**
+             * 隐藏 Modal
+             */
+            function hideModal() {
+                modal.classList.add('hidden');
+            }
+
+            /**
+             * 复制 Modal 内容到剪贴板
+             */
+            function copyToClipboard() {
+                // 创建一个临时的textarea来处理HTML到纯文本的转换
+                const tempEl = document.createElement('textarea');
+                // 转换 <br> 为换行符
+                let textContent = modalContent.innerHTML.replace(/<br\s*[\/]?>/gi, "\n");
+                // 移除其他HTML标签
+                textContent = textContent.replace(/<[^>]+>/g, '');
+                // 移除多余的空白
+                textContent = textContent.replace(/&nbsp;/g, ' ');
+                textContent = textContent.replace(/\s+/g, ' ').trim();
+                
+                tempEl.value = textContent;
+                document.body.appendChild(tempEl);
+                tempEl.select();
+                try {
+                    document.execCommand('copy'); // 使用 execCommand 以兼容iFrame
+                    copyModalBtn.textContent = '复制成功!';
+                    setTimeout(() => { copyModalBtn.textContent = '复制内容'; }, 2000);
+                } catch (err) {
+                    console.error('复制失败: ', err);
+                    copyModalBtn.textContent = '复制失败';
+                }
+                document.body.removeChild(tempEl);
+            }
+
+
+            /**
+             * 带指数退避的 Fetch API 调用
+             * @param {number} maxRetries 最大重试次数
+             */
+            async function fetchWithBackoff(url, options, maxRetries = 5) {
+                let attempt = 0;
+                while (attempt < maxRetries) {
+                    try {
+                        const response = await fetch(url, options);
+                        if (response.ok) {
+                            return await response.json();
+                        }
+                        // 只对特定的可重试错误进行退避
+                        if ([429, 500, 503].includes(response.status)) {
+                            throw new Error(`Retryable error: ${response.status}`);
+                        } else {
+                            // 对于 400 等客户端错误，直接抛出
+                            const errorData = await response.json();
+                            throw new Error(`Non-retryable error: ${response.status} - ${errorData.error?.message || 'Unknown error'}`);
+                        }
+                    } catch (error) {
+                        attempt++;
+                        if (attempt >= maxRetries) {
+                            throw error; // 达到最大重试次数，抛出最终错误
+                        }
+                        const delay = Math.pow(2, attempt) * 1000 + Math.random() * 1000;
+                        // 不在控制台打印重试日志
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                    }
+                }
+            }
+            
+            /**
+             * 营养方案的 JSON Schema
+             */
+            const nutritionSchema = {
+                type: "OBJECT",
+                properties: {
+                    "key_nutrient_adjustments": {
+                        "type": "ARRAY",
+                        "items": { "type": "STRING" },
+                        "description": "关键营养调整建议 (例如: '提高净能至 X Mj/kg')"
+                    },
+                    "feeding_strategy": {
+                        "type": "ARRAY",
+                        "items": { "type": "STRING" },
+                        "description": "饲喂策略建议 (例如: '从产后第5天开始自由采食')"
+                    },
+                    "water_management": {
+                        "type": "ARRAY",
+                        "items": { "type": "STRING" },
+                        "description": "饮水管理建议 (例如: '确保水流量不低于 2L/分钟')"
+                    }
+                },
+                "propertyOrdering": ["key_nutrient_adjustments", "feeding_strategy", "water_management"]
+            };
+
+            /**
+             * 调用 Gemini API 的主函数
+             * @param {string} userQuery - 用户的提示
+             * @param {string} systemInstruction - 系统指令
+             * @param {boolean} isJson - 是否请求 JSON 响应
+             * @param {object} schema - (可选) JSON schema
+             */
+            async function callGeminiAPI(userQuery, systemInstruction, isJson = false, schema = null) {
+                showLoading(true);
+
+                const payload = {
+                    contents: [{ parts: [{ text: userQuery }] }],
+                    systemInstruction: {
+                        parts: [{ text: systemInstruction }]
+                    },
+                };
+
+                if (isJson && schema) {
+                    payload.generationConfig = {
+                        responseMimeType: "application/json",
+                        responseSchema: schema
+                    };
+                }
+
+                try {
+                    const result = await fetchWithBackoff(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (result && result.candidates && result.candidates[0].content) {
+                        const textResponse = result.candidates[0].content.parts[0].text;
+                        showLoading(false);
+                        return { success: true, response: textResponse };
+                    } else {
+                        throw new Error("无效的 API 响应结构");
+                    }
+                } catch (error) {
+                    console.error('Gemini API 调用失败:', error);
+                    showLoading(false);
+                    return { success: false, error: error.message };
+                }
+            }
+
+            // --- 事件监听器 ---
+
+            // 1. 生成团队周报
+            generateMemoBtn.addEventListener('click', async () => {
+                const conclusionEl = document.getElementById('coreConclusions');
+                const problemText = (conclusionEl) ? (conclusionEl.innerText || conclusionEl.textContent) : "核心结论未找到。";
+                
+                const systemPrompt = "你是一个专业的猪场场长。根据以下这份生产报告的核心结论，给产房团队起草一份简短、有力、重点突出的周报备忘录。备忘录需要：1. 肯定团队在高产仔数上的努力。2. 严肃指出两个核心问题（高胎次死亡率和低断奶均重）。3. 提出 3-4 个本周必须执行的、最关键的行动点。";
+                const userQuery = `报告结论摘要如下：\n\n${problemText}`;
+
+                const result = await callGeminiAPI(userQuery, systemPrompt, false);
+
+                if (result.success) {
+                    const formattedContent = result.response.replace(/\n/g, '<br>');
+                    showModal("✨ 智能团队周报 (草稿)", formattedContent);
+                } else {
+                    showModal("生成失败", `<p class="text-red-600">无法连接到 AI 服务，请稍后重试。</p><p class="text-sm mt-2">错误: ${result.error}</p>`);
+                }
+            });
+
+            // 2. 分析营养方案
+            generateNutritionBtn.addEventListener('click', async () => {
+                const problemText = "核心问题：胎次 3 的母猪饲喂时间最长（30.5天），但产出的仔猪均重却是最低的（6.84 kg），显著低于胎次 1（24天断奶，9.46 kg）。";
+                
+                const systemPrompt = "你是一位顶级的猪只营养专家。一个猪场遇到了以下问题，请根据这个问题，提供一个结构化的营养和管理调整方案。请严格按照提供的 JSON 格式输出。";
+                
+                const result = await callGeminiAPI(problemText, systemPrompt, true, nutritionSchema);
+
+                if (result.success) {
+                    try {
+                        const data = JSON.parse(result.response);
+                        // 将 JSON 格式化为 HTML
+                        let htmlContent = `
+                            <p class="mb-4 text-sm bg-gray-100 p-3 rounded-md">基于“胎次3母猪泌乳后期仔猪均重低”的问题，AI 建议如下：</p>
+                            <h4 class="text-md font-semibold text-emerald-700 mb-2">1. 关键营养调整建议</h4>
+                            <ul class="list-disc list-inside space-y-1 mb-4">
+                                ${data.key_nutrient_adjustments.map(item => `<li class="ml-4">${item}</li>`).join('')}
+                            </ul>
+                            <h4 class="text-md font-semibold text-emerald-700 mb-2">2. 饲喂策略建议</h4>
+                            <ul class="list-disc list-inside space-y-1 mb-4">
+                                ${data.feeding_strategy.map(item => `<li class="ml-4">${item}</li>`).join('')}
+                            </ul>
+                            <h4 class="text-md font-semibold text-emerald-700 mb-2">3. 饮水管理建议</h4>
+                            <ul class="list-disc list-inside space-y-1">
+                                ${data.water_management.map(item => `<li class="ml-4">${item}</li>`).join('')}
+                            </ul>
+                        `;
+                        showModal("✨ AI 营养方案分析", htmlContent);
+                    } catch (parseError) {
+                        console.error("解析 JSON 失败:", parseError);
+                        showModal("分析失败", `<p class="text-red-600">AI 返回了无效的数据格式。</p><p class="text-sm mt-2">原始数据: ${result.response}</p>`);
+                    }
+                } else {
+                    showModal("生成失败", `<p class="text-red-600">无法连接到 AI 服务，请稍后重试。</p><p class="text-sm mt-2">错误: ${result.error}</p>`);
+                }
+            });
+
+            // Modal 关闭和复制按钮
+            closeModalBtn.addEventListener('click', hideModal);
+            copyModalBtn.addEventListener('click', copyToClipboard);
+            // 点击 Modal 外部灰色区域关闭
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    hideModal();
+                }
+            });
+
+        })();
+    </script>
+
+</body>
+</html>
