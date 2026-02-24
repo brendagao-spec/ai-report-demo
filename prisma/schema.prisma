@@ -13,3 +13,25 @@ model UserSettings {
   startDate   DateTime
   updatedAt   DateTime @updatedAt
 }
+
+model ModuleEntry {
+  id        Int        @id @default(autoincrement())
+  module    ModuleType
+  date      DateTime
+  score     Int
+  note      String?
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@unique([module, date])
+  @@index([module, date])
+}
+
+enum ModuleType {
+  BODY
+  MILK
+  LEARNING
+  EMOTION
+  MULTICHILD
+  GROWTH
+}
